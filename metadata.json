@@ -1,0 +1,7 @@
+{
+  "name": "MediWound AI - Hospital Grade Diagnostics",
+  "description": "A comprehensive wound assessment and management tool featuring AI-driven measurement, longitudinal tracking, and patient record management.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
