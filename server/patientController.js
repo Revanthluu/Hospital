@@ -26,7 +26,8 @@ export const getPatients = async (req, res) => {
             ward: p.ward,
             room: p.room,
             diagnosis: p.diagnosis,
-            status: p.status
+            status: p.status,
+            user_id: p.user_id
         }));
         res.json(formattedPatients);
     } catch (error) {
@@ -46,18 +47,19 @@ export const createPatient = async (req, res) => {
         }
 
         const query = `
-            INSERT INTO patients (id, mrn, first_name, last_name, dob, gender, admission_date, ward, room, diagnosis)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO patients (id, mrn, first_name, last_name, dob, gender, admission_date, ward, room, diagnosis, user_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
         await db.query(query, [
             patient.id, patient.mrn, patient.firstName, patient.lastName,
             patient.dob, patient.gender, patient.admissionDate,
-            patient.ward, patient.room, patient.diagnosis
+            patient.ward, patient.room, patient.diagnosis, patient.user_id
         ]);
 
         res.status(201).json({ message: 'Patient created successfully' });
     } catch (error) {
+        console.error('Error creating patient:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 };

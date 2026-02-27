@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { User, Alert, UserRole } from '../types';
 import { db } from '../services/db';
+import { AlertsNotificationList } from './dashboards/SharedDashboardComponents';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -83,7 +84,7 @@ const Layout: React.FC<LayoutProps> = ({ children, title = "Dashboard Overview" 
           <SidebarLink to="/reports" icon="fas fa-file-alt" label="Reports" />
 
           {currentUser?.role !== UserRole.PATIENT && (
-            <div className="pt-4">
+            <div className="pt-4 relative">
               <button
                 onClick={() => setShowAlerts(!showAlerts)}
                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all text-sm font-medium ${showAlerts ? 'bg-blue-50 text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
@@ -98,6 +99,20 @@ const Layout: React.FC<LayoutProps> = ({ children, title = "Dashboard Overview" 
                   </span>
                 )}
               </button>
+
+              {showAlerts && (
+                <div className="absolute left-0 top-full mt-2 z-[100] animate-in slide-in-from-top-2 duration-300">
+                  <AlertsNotificationList
+                    alerts={alerts}
+                    onMarkRead={handleMarkAsRead}
+                    onMarkAllRead={handleMarkAllAsRead}
+                    onNavigate={(id) => {
+                      setShowAlerts(false);
+                      navigate(`/patients/${id}`);
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -136,9 +151,6 @@ const Layout: React.FC<LayoutProps> = ({ children, title = "Dashboard Overview" 
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-4 text-slate-400">
               <button className="hover:text-slate-600"><i className="far fa-question-circle text-lg"></i></button>
-              <button className="relative hover:text-slate-600">
-                <i className="far fa-bell text-lg"></i>
-              </button>
             </div>
             <div className="flex items-center gap-3 pl-6 border-l border-slate-200">
               <div className="text-right hidden sm:block">

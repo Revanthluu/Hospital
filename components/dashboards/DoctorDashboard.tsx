@@ -9,7 +9,8 @@ import {
     PriorityAttention,
     ScheduledTaskRow,
     WoundDistribution,
-    FidelityTaskModal
+    FidelityTaskModal,
+    AlertsNotificationList
 } from './SharedDashboardComponents';
 
 export const DoctorDashboard: React.FC<{ user: User }> = ({ user }) => {
@@ -20,21 +21,25 @@ export const DoctorDashboard: React.FC<{ user: User }> = ({ user }) => {
     const [nurses, setNurses] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [showTaskModal, setShowTaskModal] = useState(false);
+    const [alerts, setAlerts] = useState<any[]>([]);
+    const [showAlerts, setShowAlerts] = useState(false);
     const [newTask, setNewTask] = useState({ nurse_id: '', patient_id: '', title: '', description: '', due_date: '' });
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [pData, aData, tData, uData] = await Promise.all([
+                const [pData, aData, tData, uData, alData] = await Promise.all([
                     db.getPatients(),
                     db.getAssessments(),
                     db.getTasks('DOCTOR', parseInt(user.id)),
-                    db.getUsers()
+                    db.getUsers(),
+                    db.getAlerts()
                 ]);
                 setPatients(pData);
                 setAssessments(aData);
                 setTasks(tData);
                 setNurses(uData.filter(u => u.role === UserRole.NURSE));
+                setAlerts(alData);
             } catch (e) {
                 console.error(e);
             } finally {
@@ -54,6 +59,20 @@ export const DoctorDashboard: React.FC<{ user: User }> = ({ user }) => {
     };
     const handleViewAnalytics = () => navigate('/assessments');
     const handleTaskClick = (patientId: string) => navigate(`/patients/${patientId}`);
+
+    const handleMarkAlertAsRead = async (id: number) => {
+        const success = await db.markAlertAsRead(id);
+        if (success) {
+            setAlerts(alerts.filter(a => a.id !== id));
+        }
+    };
+
+    const handleMarkAllAlertsAsRead = async () => {
+        const success = await db.markAllAlertsAsRead();
+        if (success) {
+            setAlerts([]);
+        }
+    };
 
     const handleCreateTask = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -116,7 +135,8 @@ export const DoctorDashboard: React.FC<{ user: User }> = ({ user }) => {
     if (loading) return <div className="p-12 text-center font-black text-slate-300 uppercase tracking-widest animate-pulse">Synchronizing Visual Console...</div>;
 
     return (
-        <div className="max-w-[1600px] mx-auto animate-in fade-in duration-700">
+        <div className="max-w-[1600px] mx-auto animate-in fade-in duration-700 relative">
+
             <FidelityHeader
                 greeting={`Good Morning, Dr. ${user.fullName.split(' ').pop()}`}
                 date={getGreetingDate()}
@@ -149,12 +169,12 @@ export const DoctorDashboard: React.FC<{ user: User }> = ({ user }) => {
                             color="red"
                         />
                         <FidelityStatCard
-                            label="Wound Healing Rate"
-                            value="84%"
-                            icon="fas fa-wave-square"
-                            trend="+5%"
-                            subtitle="Patients improving this week"
-                            color="emerald"
+                            label="System Alerts"
+                            value={alerts.length}
+                            icon="fas fa-bell"
+                            trend={alerts.length > 0 ? 'URGENT' : 'CLEAR'}
+                            subtitle="Unread notifications"
+                            color="purple"
                         />
                         <FidelityStatCard
                             label="Avg. Assessment Time"

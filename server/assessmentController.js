@@ -44,7 +44,14 @@ export const createAssessment = async (req, res) => {
             assessment.marker_data, assessment.status, assessment.image_data, assessment.doctor_suggestion
         ]);
 
-        res.status(201).json({ message: 'Assessment saved successfully' });
+        // Automatically create an alert for the new assessment
+        const alertMessage = `New assessment for patient ${assessment.patient_id}: ${assessment.wound_location || 'General assessment'}`;
+        await db.query(
+            'INSERT INTO alerts (patient_id, assessment_id, message) VALUES (?, ?, ?)',
+            [assessment.patient_id, assessment.id, alertMessage]
+        );
+
+        res.status(201).json({ message: 'Assessment saved and alert generated successfully' });
     } catch (error) {
         console.error('Error saving assessment:', error);
         res.status(500).json({ message: 'Internal server error' });

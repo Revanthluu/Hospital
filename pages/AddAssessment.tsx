@@ -17,6 +17,7 @@ export const AddAssessment = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [aiError, setAiError] = useState<string | null>(null);
     const [patients, setPatients] = useState<any[]>([]);
 
     // Default date to today in YYYY-MM-DD format for the input
@@ -73,7 +74,7 @@ export const AddAssessment = () => {
 
     const analyzeImage = async (base64Data: string) => {
         setIsAnalyzing(true);
-        setError(null);
+        setAiError(null);
         try {
             const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
 
@@ -124,7 +125,7 @@ export const AddAssessment = () => {
             }));
         } catch (e: any) {
             console.error("AI Analysis Failed:", e);
-            setError(`AI analysis encountered an error: ${e.message || "Unknown error"}. Please enter values manually.`);
+            setAiError("AI surface analysis is temporarily unavailable due to high server demand. Please enter clinical parameters manually to proceed.");
         } finally {
             setIsAnalyzing(false);
         }
@@ -239,6 +240,12 @@ export const AddAssessment = () => {
                 </div>
             )}
 
+            {aiError && (
+                <div className="mb-8 p-4 bg-amber-50 border border-amber-100 text-amber-700 rounded-2xl flex items-center gap-3 font-bold text-sm">
+                    <i className="fas fa-robot text-amber-500"></i>
+                    {aiError}
+                </div>
+            )}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="space-y-8">
                     <section className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">

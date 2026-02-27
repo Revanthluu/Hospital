@@ -342,3 +342,58 @@ export const FidelityTaskModal: React.FC<{
         </div>
     );
 };
+
+export const AlertsNotificationList: React.FC<{
+    alerts: any[];
+    onMarkRead: (id: number) => void;
+    onMarkAllRead: () => void;
+    onNavigate?: (patientId: string) => void;
+}> = ({ alerts, onMarkRead, onMarkAllRead, onNavigate }) => (
+    <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden w-72 max-h-[400px] flex flex-col">
+        <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
+            <h3 className="font-black text-slate-800 text-sm tracking-tight uppercase">System Alerts</h3>
+            {alerts.length > 0 && (
+                <button onClick={onMarkAllRead} className="text-[9px] font-black text-blue-600 uppercase tracking-widest hover:underline">Clear All</button>
+            )}
+        </div>
+        <div className="flex-1 overflow-y-auto divide-y divide-slate-50 scrollbar-hide">
+            {alerts.length === 0 ? (
+                <div className="p-10 text-center">
+                    <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-200">
+                        <i className="fas fa-bell-slash"></i>
+                    </div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocol Clear</p>
+                </div>
+            ) : (
+                alerts.map(alert => (
+                    <div
+                        key={alert.id}
+                        className="p-5 hover:bg-slate-50 transition-colors group relative cursor-pointer"
+                        onClick={() => onNavigate && onNavigate(alert.patient_id)}
+                    >
+                        <div className="flex gap-4">
+                            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center shrink-0 text-xs">
+                                <i className="fas fa-info-circle"></i>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[11px] font-bold text-slate-800 leading-tight mb-1">{alert.message}</p>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                    {new Date(alert.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                            </div>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onMarkRead(alert.id);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 p-1 text-slate-300 hover:text-blue-500 transition-all"
+                            >
+                                <i className="fas fa-check-circle"></i>
+                            </button>
+                        </div>
+                    </div>
+                ))
+            )}
+        </div>
+    </div>
+);
