@@ -1,12 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { db } from '../../services/db';
 import { User, Assessment, Patient } from '../../types';
 import { DashboardHeader, ClinicalStat, SectionHeader } from './SharedDashboardComponents';
+import { useNavigate } from 'react-router-dom';
 
 export const PatientDashboard: React.FC<{ user: User }> = ({ user }) => {
     const [patient, setPatient] = useState<Patient | null>(null);
     const [assessments, setAssessments] = useState<Assessment[]>([]);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
+    const journeyRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -27,6 +30,20 @@ export const PatientDashboard: React.FC<{ user: User }> = ({ user }) => {
         fetchData();
     }, [user.id]);
 
+    const handleContactCare = () => {
+        alert("Connecting to clinical command center... A care coordinator will be with you shortly.");
+    };
+
+    const handleAction = (label: string) => {
+        if (label === "Download Records") {
+            navigate('/reports');
+        } else if (label === "Secure Messaging") {
+            alert("Secure Messaging Protocol Initializing... You will be notified when the channel is established.");
+        } else if (label === "Request Consultation") {
+            alert("Consultation request transmitted to physician. Check your notifications for scheduling details.");
+        }
+    };
+
     if (loading) return <div className="p-12 text-center font-black text-slate-300 uppercase tracking-widest animate-pulse">Accessing Secure Health Records...</div>;
 
     if (!patient) return (
@@ -36,7 +53,12 @@ export const PatientDashboard: React.FC<{ user: User }> = ({ user }) => {
             </div>
             <h3 className="text-3xl font-black text-slate-800 mb-4 tracking-tight">Protocol Sync Pending</h3>
             <p className="text-slate-500 font-medium leading-relaxed mb-10">Your clinical biometric data is currently being encrypted and synchronized with your medical file. Please contact your physician for immediate activation.</p>
-            <button className="px-10 py-4 bg-slate-900 text-white rounded-full font-black text-xs uppercase tracking-[0.2em] shadow-xl">Contact Care Team</button>
+            <button
+                onClick={handleContactCare}
+                className="px-10 py-4 bg-slate-900 text-white rounded-full font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:scale-105 transition-all"
+            >
+                Contact Care Team
+            </button>
         </div>
     );
 
@@ -53,11 +75,18 @@ export const PatientDashboard: React.FC<{ user: User }> = ({ user }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <ClinicalStat label="Recovery Status" value={patient.status || 'Active'} icon="fas fa-shield-heart" color="emerald" trend="OPTIMAL" />
                 <ClinicalStat label="Clinical ID" value={patient.mrn} icon="fas fa-fingerprint" color="indigo" subtitle="Secure Medical Key" />
-                <ClinicalStat label="Data Snapshots" value={assessments.length} icon="fas fa-camera-retro" color="blue" subtitle="Imaging History" />
+                <ClinicalStat
+                    label="Data Snapshots"
+                    value={assessments.length}
+                    icon="fas fa-camera-retro"
+                    color="blue"
+                    subtitle="Imaging History"
+                    onClick={() => journeyRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm relative">
+                <div ref={journeyRef} className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm relative scroll-mt-10">
                     <SectionHeader title="Your Healing Journey" icon="fas fa-route" colorClass="bg-emerald-50 text-emerald-500" />
 
                     {assessments.length === 0 ? (
@@ -102,7 +131,10 @@ export const PatientDashboard: React.FC<{ user: User }> = ({ user }) => {
                     <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm">
                         <SectionHeader title="Your Care Team" icon="fas fa-user-group" colorClass="bg-indigo-50 text-indigo-500" />
                         <div className="space-y-4">
-                            <div className="flex items-center gap-5 p-5 bg-slate-50 rounded-[2rem] border border-slate-50 hover:bg-white hover:shadow-md transition-all group">
+                            <div
+                                onClick={handleContactCare}
+                                className="flex items-center gap-5 p-5 bg-slate-50 rounded-[2rem] border border-slate-50 hover:bg-white hover:shadow-md transition-all group cursor-pointer"
+                            >
                                 <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-blue-600 border border-slate-100 shadow-sm group-hover:scale-110 transition-transform">
                                     <i className="fas fa-user-doctor text-xl"></i>
                                 </div>
@@ -118,9 +150,21 @@ export const PatientDashboard: React.FC<{ user: User }> = ({ user }) => {
                         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500 rounded-full blur-3xl -mr-16 -mt-16 opacity-20"></div>
                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] mb-10 text-white/40">Secure Patient Portal</h3>
                         <div className="space-y-4">
-                            <PatientAction icon="fas fa-file-medical" label="Download Records" />
-                            <PatientAction icon="fas fa-comment-medical" label="Secure Messaging" />
-                            <PatientAction icon="fas fa-calendar-check" label="Request Consultation" />
+                            <PatientAction
+                                icon="fas fa-file-medical"
+                                label="Download Records"
+                                onClick={() => handleAction("Download Records")}
+                            />
+                            <PatientAction
+                                icon="fas fa-comment-medical"
+                                label="Secure Messaging"
+                                onClick={() => handleAction("Secure Messaging")}
+                            />
+                            <PatientAction
+                                icon="fas fa-calendar-check"
+                                label="Request Consultation"
+                                onClick={() => handleAction("Request Consultation")}
+                            />
                         </div>
                         <i className="fas fa-shield-heart absolute -right-6 -bottom-6 text-9xl text-white/5 -rotate-12 group-hover:scale-110 transition-transform duration-700"></i>
                     </div>
@@ -130,8 +174,11 @@ export const PatientDashboard: React.FC<{ user: User }> = ({ user }) => {
     );
 };
 
-const PatientAction = ({ icon, label }: { icon: string; label: string }) => (
-    <div className="flex items-center gap-4 p-5 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 transition-all cursor-pointer group/item shadow-inner">
+const PatientAction = ({ icon, label, onClick }: { icon: string; label: string; onClick?: () => void }) => (
+    <div
+        onClick={onClick}
+        className="flex items-center gap-4 p-5 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 transition-all cursor-pointer group/item shadow-inner"
+    >
         <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-emerald-300 group-hover/item:text-white transition-colors">
             <i className={icon}></i>
         </div>

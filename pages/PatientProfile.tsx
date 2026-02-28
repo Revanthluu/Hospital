@@ -106,23 +106,35 @@ const PatientProfile: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <button
-                onClick={async () => {
-                  const newStatus = patient.status === 'Active' ? 'Recovered' : 'Active';
-                  const success = await db.updatePatientStatus(patient.id, newStatus);
-                  if (success) {
-                    setPatient({ ...patient, status: newStatus });
-                  }
-                }}
-                className={`flex-1 md:flex-none px-7 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-sm border ${patient.status === 'Active' ? 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-green-600 hover:text-white hover:border-green-600' : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'}`}
-              >
-                <i className={patient.status === 'Active' ? 'fas fa-check-double' : 'fas fa-undo-alt'}></i>
-                {patient.status === 'Active' ? 'Discharge' : 'Reactivate'}
-              </button>
-              <Link to={`/add-assessment?patientId=${patient.id}`} className="flex-1 md:flex-none px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all flex items-center justify-center gap-3">
-                <i className="fas fa-plus-circle"></i>
-                New Assessment
-              </Link>
+              {(() => {
+                const userJson = sessionStorage.getItem('user');
+                const currentUser = userJson ? JSON.parse(userJson) : null;
+                const canManage = ['ADMIN', 'NURSE', 'DOCTOR'].includes(currentUser?.role);
+
+                if (!canManage) return null;
+
+                return (
+                  <>
+                    <button
+                      onClick={async () => {
+                        const newStatus = patient.status === 'Active' ? 'Recovered' : 'Active';
+                        const success = await db.updatePatientStatus(patient.id, newStatus);
+                        if (success) {
+                          setPatient({ ...patient, status: newStatus });
+                        }
+                      }}
+                      className={`flex-1 md:flex-none px-7 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-sm border ${patient.status === 'Active' ? 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-green-600 hover:text-white hover:border-green-600' : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'}`}
+                    >
+                      <i className={patient.status === 'Active' ? 'fas fa-check-double' : 'fas fa-undo-alt'}></i>
+                      {patient.status === 'Active' ? 'Discharge' : 'Reactivate'}
+                    </button>
+                    <Link to={`/add-assessment?patientId=${patient.id}`} className="flex-1 md:flex-none px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all flex items-center justify-center gap-3">
+                      <i className="fas fa-plus-circle"></i>
+                      New Assessment
+                    </Link>
+                  </>
+                );
+              })()}
             </div>
           </div>
 
