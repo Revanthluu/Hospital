@@ -1,8 +1,8 @@
 import React, { ReactNode } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { User, UserRole } from './types';
+import { UserRole } from './types';
 
-// Page Imports
+// Pages
 import Login from './pages/Login';
 import Onboarding from './pages/Onboarding';
 import RoleSelection from './pages/RoleSelection';
@@ -47,11 +47,12 @@ const App: React.FC = () => {
   return (
     <Router>
       <Routes>
-        {/* Public Routes */}
+
+        {/* Public */}
         <Route path="/" element={<Login />} />
         <Route path="/loading" element={<LoadingScreen />} />
 
-        {/* Protected Routes */}
+        {/* Protected */}
         <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
         <Route path="/role-selection" element={<ProtectedRoute><RoleSelection /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -59,15 +60,25 @@ const App: React.FC = () => {
         <Route path="/assessments" element={<ProtectedRoute><AssessmentHistory /></ProtectedRoute>} />
         <Route path="/patients" element={<ProtectedRoute><PatientList /></ProtectedRoute>} />
         <Route path="/my-profile" element={<ProtectedRoute><MyHealthFile /></ProtectedRoute>} />
-        <Route path="/staff" element={<RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}><StaffList /></RoleProtectedRoute>} />
         <Route path="/add-patient" element={<ProtectedRoute><AddPatient /></ProtectedRoute>} />
         <Route path="/patients/:id" element={<ProtectedRoute><PatientProfile /></ProtectedRoute>} />
         <Route path="/assessments/:id" element={<ProtectedRoute><AssessmentDetail /></ProtectedRoute>} />
-
-        {/* Fallback routes */}
         <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+
+        {/* Admin only */}
+        <Route
+          path="/staff"
+          element={
+            <RoleProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+              <StaffList />
+            </RoleProtectedRoute>
+          }
+        />
+
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
+
       </Routes>
     </Router>
   );
