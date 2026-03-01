@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { UserRole } from '../types';
 import { emailService } from '../services/emailService';
 
@@ -15,16 +14,13 @@ const Login: React.FC = () => {
   const [userOtp, setUserOtp] = useState('');
   const [generatedOtp, setGeneratedOtp] = useState('');
 
-  const navigate = useNavigate();
-
   useEffect(() => {
     emailService.init();
   }, []);
 
-  // ================= OTP =================
   const generateAndSendOtp = async () => {
     if (!email || !fullName) {
-      setError('Please fill in your name and email address first.');
+      setError('Please fill in your name and email.');
       return;
     }
 
@@ -37,20 +33,18 @@ const Login: React.FC = () => {
       setShowOtpInput(true);
       setError(null);
     } catch (e: any) {
-      setError(`Verification Error: ${e.message}`);
+      setError(e.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // ================= AUTH =================
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
-      // ===== REGISTER =====
       if (isRegistering) {
         if (!showOtpInput) {
           await generateAndSendOtp();
@@ -58,32 +52,22 @@ const Login: React.FC = () => {
         }
 
         if (userOtp !== generatedOtp) {
-          setError('Invalid verification code.');
+          setError('Invalid OTP');
           return;
         }
 
-        const res = await fetch('/.netlify/functions/register', {
+        await fetch('/.netlify/functions/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password, fullName, role }),
         });
 
-        const data = await res.json();
-
-        if (!data.success) {
-          setError(data.message);
-          return;
-        }
-
         setIsRegistering(false);
         setShowOtpInput(false);
-        setGeneratedOtp('');
-        setUserOtp('');
-        setError('Account created successfully. Please login.');
+        setError('Account created. Please login.');
         return;
       }
 
-      // ===== LOGIN =====
       const res = await fetch('/.netlify/functions/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -91,7 +75,6 @@ const Login: React.FC = () => {
       });
 
       const data = await res.json();
-
       if (!data.success) {
         setError(data.message);
         return;
@@ -99,130 +82,53 @@ const Login: React.FC = () => {
 
       sessionStorage.setItem('isLoggedIn', 'true');
       sessionStorage.setItem('user', JSON.stringify(data.user));
-      navigate('/dashboard');
+
+      // ✅ HASH ROUTER FIX
+      window.location.hash = '#/dashboard';
 
     } catch {
-      setError('Network error. Please try again.');
+      setError('Network error');
     } finally {
       setLoading(false);
     }
   };
 
-  // ================= UI =================
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative">
-      <div className="absolute top-8 left-8 flex items-center gap-3">
-        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white text-xl">
-          <i className="fas fa-plus"></i>
-        </div>
-        <div>
-          <h1 className="font-bold text-slate-800 text-xl">MediWound AI</h1>
-          <p className="text-xs text-slate-500 font-bold uppercase">
-            Hospital - Grade Diagnostics
-          </p>
-        </div>
-      </div>
-
-      <div className="w-full max-w-md bg-white p-8 md:p-10 rounded-3xl shadow-xl border border-slate-100">
-        <h2 className="text-2xl font-bold mb-2">
-          {isRegistering ? 'Create Clinical Account' : 'Welcome Back'}
+    <div className="min-h-screen flex items-center justify-center">
+      <form onSubmit={handleAuth} className="bg-white p-8 rounded-xl w-96">
+        <h2 className="text-xl font-bold mb-4">
+          {isRegistering ? 'Register' : 'Login'}
         </h2>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl font-bold">
-            {error}
-          </div>
+        {error && <div className="text-red-600 mb-3">{error}</div>}
+
+        {isRegistering && !showOtpInput && (
+          <>
+            <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Full Name" />
+            <select value={role} onChange={e => setRole(e.target.value as UserRole)}>
+              <option value={UserRole.ADMIN}>Admin</option>
+              <option value={UserRole.DOCTOR}>Doctor</option>
+              <option value={UserRole.NURSE}>Nurse</option>
+              <option value={UserRole.PATIENT}>Patient</option>
+            </select>
+          </>
         )}
 
-        <form onSubmit={handleAuth} className="space-y-6">
+        <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" />
+        <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" />
 
-          {isRegistering && showOtpInput && (
-            <input
-              type="text"
-              value={userOtp}
-              onChange={(e) => setUserOtp(e.target.value)}
-              maxLength={6}
-              required
-              placeholder="000000"
-              className="w-full p-4 text-center text-2xl rounded-xl border"
-            />
-          )}
+        {showOtpInput && (
+          <input value={userOtp} onChange={e => setUserOtp(e.target.value)} placeholder="OTP" />
+        )}
 
-          {!showOtpInput && (
-            <>
-              {isRegistering && (
-                <>
-                  <input
-                    type="text"
-                    placeholder="Full Name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                    className="w-full p-4 rounded-xl border"
-                  />
-
-                  <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value as UserRole)}
-                    className="w-full p-4 rounded-xl border"
-                  >
-                    <option value={UserRole.ADMIN}>Admin</option>
-                    <option value={UserRole.DOCTOR}>Doctor</option>
-                    <option value={UserRole.NURSE}>Nurse</option>
-                    <option value={UserRole.PATIENT}>Patient</option>
-                  </select>
-                </>
-              )}
-
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full p-4 rounded-xl border"
-              />
-
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full p-4 rounded-xl border"
-              />
-            </>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold"
-          >
-            {loading
-              ? 'Processing...'
-              : isRegistering
-              ? showOtpInput
-                ? 'Verify & Register'
-                : 'Send Verification Email'
-              : 'Login'}
-          </button>
-        </form>
-
-        <button
-          className="mt-4 text-sm font-bold text-slate-500"
-          onClick={() => {
-            setIsRegistering(!isRegistering);
-            setError(null);
-            setShowOtpInput(false);
-            setUserOtp('');
-          }}
-        >
-          {isRegistering
-            ? 'Already have an account? Login'
-            : 'New Clinician? Register'}
+        <button type="submit" disabled={loading}>
+          {loading ? 'Please wait...' : isRegistering ? 'Register' : 'Login'}
         </button>
-      </div>
+
+        <button type="button" onClick={() => setIsRegistering(!isRegistering)}>
+          Toggle Register/Login
+        </button>
+      </form>
     </div>
   );
 };
