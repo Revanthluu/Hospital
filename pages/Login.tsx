@@ -18,9 +18,10 @@ const Login: React.FC = () => {
     emailService.init();
   }, []);
 
+  // ================= OTP =================
   const generateAndSendOtp = async () => {
     if (!email || !fullName) {
-      setError('Please fill in your name and email.');
+      setError('Please fill in your name and email address first.');
       return;
     }
 
@@ -33,18 +34,20 @@ const Login: React.FC = () => {
       setShowOtpInput(true);
       setError(null);
     } catch (e: any) {
-      setError(e.message);
+      setError(`Verification Error: ${e.message}`);
     } finally {
       setLoading(false);
     }
   };
 
+  // ================= AUTH =================
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
+      // ===== REGISTER =====
       if (isRegistering) {
         if (!showOtpInput) {
           await generateAndSendOtp();
@@ -52,22 +55,31 @@ const Login: React.FC = () => {
         }
 
         if (userOtp !== generatedOtp) {
-          setError('Invalid OTP');
+          setError('Invalid verification code.');
           return;
         }
 
-        await fetch('/.netlify/functions/register', {
+        const res = await fetch('/.netlify/functions/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password, fullName, role }),
         });
 
+        const data = await res.json();
+        if (!data.success) {
+          setError(data.message || 'Registration failed');
+          return;
+        }
+
         setIsRegistering(false);
         setShowOtpInput(false);
-        setError('Account created. Please login.');
+        setUserOtp('');
+        setGeneratedOtp('');
+        setError('Account created successfully. Please login.');
         return;
       }
 
+      // ===== LOGIN =====
       const res = await fetch('/.netlify/functions/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -76,59 +88,126 @@ const Login: React.FC = () => {
 
       const data = await res.json();
       if (!data.success) {
-        setError(data.message);
+        setError(data.message || 'Login failed');
         return;
       }
 
+      // ✅ SAVE SESSION
       sessionStorage.setItem('isLoggedIn', 'true');
       sessionStorage.setItem('user', JSON.stringify(data.user));
 
-      // ✅ HASH ROUTER FIX
-      window.location.hash = '#/dashboard';
+      // ✅ GO TO ROLE SELECTION (HashRouter safe)
+      window.location.hash = '#/role-selection';
 
     } catch {
-      setError('Network error');
+      setError('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  // ================= UI =================
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <form onSubmit={handleAuth} className="bg-white p-8 rounded-xl w-96">
-        <h2 className="text-xl font-bold mb-4">
-          {isRegistering ? 'Register' : 'Login'}
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white p-8 rounded-3xl shadow-xl border border-slate-100">
+
+        <h2 className="text-2xl font-bold text-slate-800 mb-4">
+          {isRegistering ? 'Create Clinical Account' : 'Welcome Back'}
         </h2>
 
-        {error && <div className="text-red-600 mb-3">{error}</div>}
-
-        {isRegistering && !showOtpInput && (
-          <>
-            <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Full Name" />
-            <select value={role} onChange={e => setRole(e.target.value as UserRole)}>
-              <option value={UserRole.ADMIN}>Admin</option>
-              <option value={UserRole.DOCTOR}>Doctor</option>
-              <option value={UserRole.NURSE}>Nurse</option>
-              <option value={UserRole.PATIENT}>Patient</option>
-            </select>
-          </>
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl font-bold">
+            {error}
+          </div>
         )}
 
-        <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" />
-        <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" />
+        <form onSubmit={handleAuth} className="space-y-4">
 
-        {showOtpInput && (
-          <input value={userOtp} onChange={e => setUserOtp(e.target.value)} placeholder="OTP" />
-        )}
+          {isRegistering && !showOtpInput && (
+            <>
+              <input
+                type="text"
+                placeholder="Full Name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+                className="w-full p-3 rounded-xl border"
+              />
 
-        <button type="submit" disabled={loading}>
-          {loading ? 'Please wait...' : isRegistering ? 'Register' : 'Login'}
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value as UserRole)}
+                className="w-full p-3 rounded-xl border"
+              >
+                <option value={UserRole.ADMIN}>Admin</option>
+                <option value={UserRole.DOCTOR}>Doctor</option>
+                <option value={UserRole.NURSE}>Nurse</option>
+                <option value={UserRole.PATIENT}>Patient</option>
+              </select>
+            </>
+          )}
+
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="w-full p-3 rounded-xl border"
+          />
+
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="w-full p-3 rounded-xl border"
+          />
+
+          {showOtpInput && (
+            <input
+              type="text"
+              value={userOtp}
+              onChange={(e) => setUserOtp(e.target.value)}
+              maxLength={6}
+              placeholder="Enter OTP"
+              required
+              className="w-full p-3 text-center text-xl rounded-xl border"
+            />
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold"
+          >
+            {loading
+              ? 'Processing...'
+              : isRegistering
+              ? showOtpInput
+                ? 'Verify & Register'
+                : 'Send Verification Email'
+              : 'Login'}
+          </button>
+        </form>
+
+        <button
+          className="mt-4 text-sm font-bold text-slate-500"
+          onClick={() => {
+            setIsRegistering(!isRegistering);
+            setError(null);
+            setShowOtpInput(false);
+            setUserOtp('');
+            setGeneratedOtp('');
+          }}
+        >
+          {isRegistering
+            ? 'Already have an account? Login'
+            : 'New Clinician? Register'}
         </button>
 
-        <button type="button" onClick={() => setIsRegistering(!isRegistering)}>
-          Toggle Register/Login
-        </button>
-      </form>
+      </div>
     </div>
   );
 };
