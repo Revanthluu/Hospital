@@ -21,7 +21,14 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // ✅ DEMO LOGIN (NO DB YET)
+    // 🔹 DEMO ROLE LOGIC (TEMPORARY)
+    // Replace with DB later
+    let role = "PATIENT";
+
+    if (email.includes("admin")) role = "ADMIN";
+    else if (email.includes("doctor")) role = "DOCTOR";
+    else if (email.includes("nurse")) role = "NURSE";
+
     return {
       statusCode: 200,
       body: JSON.stringify({
@@ -29,8 +36,8 @@ export const handler: Handler = async (event) => {
         user: {
           id: "1",
           email,
-          fullName: "Demo Doctor",
-          role: "DOCTOR",
+          fullName: email.split("@")[0],
+          role,
         },
       }),
     };
